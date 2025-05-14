@@ -2,6 +2,7 @@ from logging_config import setup_logging
 import mysql.connector
 import os
 import dotenv 
+from datetime import datetime
 import requests
 import json
 
@@ -81,18 +82,18 @@ def fetch_from_overpass(query):
             lat = el.get('lat') or el.get('center', {}).get('lat', 'Unknown')
             lon = el.get('lon') or el.get('center', {}).get('lon', 'Unknown')
 
-            profile = (
-                f"\nName: {name}\n"
-                f"Brand: {brand}\n"
-                f"Operator: {operator}\n"
-                f"Phone: {phone}\n"
-                f"Website: {website}\n"
-                f"Email: {email}\n"
-                f"Opening Hours: {opening_hours}\n"
-                f"Address: {address}\n"
-                f"Latitude: {lat}, Longitude: {lon}\n"
-                f"{'-'*40}"
-            )
+            profile = {
+                "Name": name,
+                "Brand": brand,
+                "Operator": operator,
+                "Phone": phone,
+                "Website": website,
+                "Email": email,
+                "Opening Hours": opening_hours,
+                "Address": address,
+                "Latitude": lat,
+                "Longitude": lon
+                }
             results.append(profile)
                 # print(profile)
                 # file.write(profile + '\n')
