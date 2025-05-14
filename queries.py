@@ -2,6 +2,17 @@ FETCH_CITIES = """SELECT * FROM CITIES c WHERE c.Id =?"""
 VERIFY_AMENITY= "SELECT * FROM `amenities` a WHERE a.name = {amenity}"
 COUNTY=  "SELECT * FROM `counties` c WHERE c.COUNTY_NAME = {county};"
 VERIFY_KEY = "SELECT * FROM `osm_keys` k WHERE LOWER(k.key_name) = {key};"
+GET_QUERY_ID = "SELECT query_id FROM queries WHERE county = %s AND `key` = %s"
+FETCH_RECORDS_FROM_DB = """
+SELECT name, brand, operator, phone, website, email, opening_hours, address, latitude, longitude FROM records WHERE query_id = %s;
+"""
+INSERT_KEY_COUNTY = "INSERT INTO queries (county, `key`) VALUES (%s, %s)"
+INSERT_RECORDS_IN_DB = """
+INSERT INTO records (
+            query_id, name, brand, operator, phone, website, email, opening_hours,
+            address, latitude, longitude
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+"""
 MAIN_QUERY = """
 [out:json][timeout:60];
 (
