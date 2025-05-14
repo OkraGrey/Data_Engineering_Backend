@@ -7,6 +7,7 @@ import json
 
 # Set up logger
 LOGGER = setup_logging()(__name__)
+
 #Loading .env
 dotenv.load_dotenv()
 
@@ -57,7 +58,7 @@ def fetch_from_overpass(query):
     # Check response
     if response.status_code == 200:
         data = response.json()
-        print(f"RECEIVED RESPONSE FROM OVERPASS : \n {data}")
+        LOGGER.info(f"RECEIVED RESPONSE FROM OVERPASS : \n {data}")
         # with open('business_profiles.txt', 'w', encoding='utf-8') as file:
         for el in data['elements']:
             tags = el.get('tags', {})
@@ -97,5 +98,5 @@ def fetch_from_overpass(query):
                 # file.write(profile + '\n')
         return results
     else:
-        print(f"THERE WAS SOME ERROR IN OVERPASS RESPONSE: \n {response.content}")
+        LOGGER.info(f"THERE WAS SOME ERROR IN OVERPASS RESPONSE: \n {response.content}")
     
