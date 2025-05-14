@@ -1,5 +1,9 @@
 import requests
-import logging as LOGGER
+from services import amenity_check, county_check, fetch_county_coordinates, fetch_amentities
+from logging_config import setup_logging
+
+# Set up logger
+LOGGER = setup_logging()(__name__)
 
 def search(amenity,county,country='USA'):
     try:
@@ -13,27 +17,27 @@ def search(amenity,county,country='USA'):
             LOGGER.info(f"VERIFYING IF AMENITY : {amenity} IS PRESENT IN OUR DB")
             verified_amenity = amenity_check(amenity) #boolean param to check if the amenity is a valid param
 
-            if verified_county and verified_amenity:
+            if verified_amenity:
                 LOGGER.info(f"County : {county} and Amenity : {amenity} are successfully found in DB")
-                
                 LOGGER.info(f"Searching coordinates for County : {county}")
 
                 # fetch coordinates of the county from the DB in the form [success/failure, (coordinates)]
                 coordinates_list = fetch_county_coordinates(county) 
                 
-                if coordinates_list[0]: #TRUE
+                if coordinates_list: #TRUE
+                    coordinates = coordinates_list # Extract coordinates in a tuple format
                     LOGGER.info(f"FOUND {coordinates} for COUNTY : {county}")
-                    coordinates = coordinates_list[1] # Extract coordinates in a tuple format
                     LOGGER.info(f"CALLING fetch_amenities service with \nAmenity: {amenity}\nCounty: {county} \nCoordinates:{coordinates}")
                     result = fetch_amentities(amenity=amenity,county=county,coordinates=coordinates) # [success/failure,[result]]
                     
-                    if result[0]:
+                    if result:
+                        print(f'RESULTS: {result}')
                         LOGGER.info("Result Fetched successfully for fetch_amentities in endpoints.py")
                         return result[1]
                     else:
                         return []
                 else:
-                    LOGGER.info(f"NO CORDINATES FOUND FOR AMENITY :{amenity}")
+                    LOGGER.info(f"NO CORDINATES FOUND FOR COUNTY :{county}")
                     return []
             else:
                 LOGGER.info("AMENITY IS NOT FOUND IN DB")
@@ -42,3 +46,5 @@ def search(amenity,county,country='USA'):
     except Exception as e:
         LOGGER.info("THERE WAS SOME EXCEPTION",{e})
         return []        
+    
+
