@@ -15,9 +15,9 @@ def get_db_connection():
     """Reusable function to get a DB connection."""
     return mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="123456",
-        database="DE-FSP"
+        user="umar",
+        password="lahoRe@123",
+        database="DE_FSP"
     )
 
 

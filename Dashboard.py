@@ -15,9 +15,9 @@ st.markdown("""
 def get_connection():
     return mysql.connector.connect(
         host="localhost",
-        user="root",
-        password="123456",
-        database="DE-FSP"
+        user="umar",
+        password="lahoRe@123",
+        database="DE_FSP"
     )
 
 @st.cache_data(ttl=300, show_spinner="Fetching data...")
