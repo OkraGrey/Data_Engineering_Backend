@@ -139,7 +139,6 @@ def check_query_exists(county, key, connection):
     cursor = connection.cursor()
     
     LOGGER.info("EXECUTING QUERY TO CHECK EXISTENCE")
-    query = 'SELECT query_id FROM queries WHERE county = %s AND `key` = %s'
     cursor.execute(queries.GET_QUERY_ID, (county, key))
     
     result = cursor.fetchone()
@@ -228,3 +227,98 @@ def insert_records(query_id, records, connection):
     LOGGER.info("Closing Connection")
     cursor.close()
 
+#----AMENITY RELATED WORK------
+
+def check_query_with_amenity_exists(county, amenity, connection):
+    LOGGER.info(f"check_query_with_amenity_exists called with county: {county}, AMENITY: {amenity}")
+    LOGGER.info("INITIATING DATABASE CONNECTION")
+    cursor = connection.cursor()
+    
+    LOGGER.info("EXECUTING QUERY TO CHECK EXISTENCE")
+
+    cursor.execute(queries.GET_QUERY_ID_FOR_AMENITY, (county, amenity))
+    
+    result = cursor.fetchone()
+    
+    LOGGER.info(f"Query result: {result}")
+
+    LOGGER.info("Closing Connection")
+    cursor.close()
+    return result[0] if result else None
+
+def get_amenity_records(query_id, connection):
+    LOGGER.info(f"get_records called with query_id: {query_id}")
+    LOGGER.info("INITIATING DATABASE CONNECTION")
+
+    cursor = connection.cursor()
+    
+    LOGGER.info(f"EXECUTING QUERY TO FETCH RECORDS with QUERY_ID : {query_id}")
+    cursor.execute(queries.FETCH_AMENITY_RECORDS_FROM_DB, (query_id,))
+
+    rows = cursor.fetchall()
+    
+    LOGGER.info(f"Fetched {len(rows)} records")
+
+    LOGGER.info("Closing Connection")
+    cursor.close()
+    return [
+        {
+            'Name': row[0],
+            'Brand': row[1],
+            'Operator': row[2],
+            'Phone': row[3],
+            'Website': row[4],
+            'Email': row[5],
+            'Opening Hours': row[6],
+            'Address': row[7],
+            'Latitude': row[8],
+            'Longitude': row[9]
+        } for row in rows
+    ]
+
+def insert_amenity_query(county, amenity, connection):
+    LOGGER.info(f"insert_query called with county: {county}, amenity: {amenity}")
+    LOGGER.info("INITIATING DATABASE CONNECTION")
+
+    cursor = connection.cursor()
+
+    LOGGER.info("EXECUTING INSERT QUERY")
+    cursor.execute(queries.INSERT_AMENITY_COUNTY, (county, amenity))
+    connection.commit()
+    
+    query_id = cursor.lastrowid
+    LOGGER.info(f"Inserted amenity_query with ID: {query_id}")
+
+    LOGGER.info("Closing Connection")
+    cursor.close()
+    return query_id
+
+
+def insert_amenity_records(query_id, records, connection):
+    LOGGER.info(f"insert_amenity_records called with query_id: {query_id} and {len(records)} records")
+    LOGGER.info("INITIATING DATABASE CONNECTION")
+
+    cursor = connection.cursor()
+
+    LOGGER.info("EXECUTING INSERTS FOR RECORDS")
+
+    for record in records:
+        cursor.execute(queries.INSERT_AMENITY_RECORDS_IN_DB, (
+            query_id,
+            record['Name'],
+            record['Brand'],
+            record['Operator'],
+            record['Phone'],
+            record['Website'],
+            record['Email'],
+            record['Opening Hours'],
+            record['Address'],
+            record['Latitude'],
+            record['Longitude']
+        ))
+
+    connection.commit()
+    LOGGER.info("Records inserted successfully")
+
+    LOGGER.info("Closing Connection")
+    cursor.close()

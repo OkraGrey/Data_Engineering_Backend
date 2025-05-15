@@ -1,5 +1,5 @@
 import queries
-from utils import build_amenity_query, build_county_query,build_query_with_key, build_key_query
+from utils import build_amenity_query, build_county_query,build_query_with_key, build_key_query, build_query_with_amenities
 from db import query_executor, fetch_from_overpass
 from logging_config import setup_logging
 # Set up logger
@@ -26,7 +26,16 @@ def key_check(key):
         return True
     else:
         return False
-
+    
+def amenity_check(amenity):
+    LOGGER.info(f"amenity_check service is called with {amenity} param")
+    Query = build_amenity_query(query=queries.VERIFY_AMENITY,amenity=amenity.lower())
+    LOGGER.info(f"query_executor to be called with \nQUERY : {Query}")
+    result = query_executor(Query)
+    if len(result) == 1:
+        return True
+    else:
+        return False
     # return True
 
 def fetch_county_coordinates(county):
@@ -48,3 +57,13 @@ def fetch_data(key,county,coordinates):
     else:
         return [False,result]
     # print(result)
+
+def fetch_data_with_amenity(amenity,county,coordinates):
+    LOGGER.info(f"fetch_data_with_amenity Service is called with \nparamas : Amenity :{amenity}, County: {county}, Coordinates : {coordinates}")
+    Query = build_query_with_amenities(query=queries.MAIN_QUERY_AMENITIES, amenity=amenity,coordinates=coordinates)
+    LOGGER.info(f"QUERY GENERATED : {Query}")
+    result = fetch_from_overpass(Query) 
+    if len(result) >=1:
+        return [True,result]
+    else:
+        return [False,result]    
