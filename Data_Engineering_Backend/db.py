@@ -22,7 +22,7 @@ thread_local = threading.local()
 # MySQL connection pool configuration
 DB_CONFIG = {
     "host": os.getenv("HOST"),
-    "user": os.getenv("USER"),
+    "user": os.getenv("DB_USER"),
     "password": os.getenv("PASSWORD"),
     "database": os.getenv("DATABASE"),
     "pool_name": "mypool",
