@@ -8,7 +8,7 @@ LOGGER = setup_logging()(__name__)
 
 def county_check(county):
     LOGGER.info(f"county_check Service is called with param :{county}")
-    Query = build_county_query(queries.COUNTY,county=county)
+    Query = build_county_query(queries.COUNTY,county=county.lower())
     LOGGER.info(f"query_executor to be called with \nQUERY : {Query}")
     result = query_executor(Query)
     if len(result)>=1:
@@ -19,7 +19,7 @@ def county_check(county):
 
 def key_check(key):
     LOGGER.info(f"key_check service is called with {key} param")
-    Query = build_key_query(query=queries.VERIFY_KEY,key=key)
+    Query = build_key_query(query=queries.VERIFY_KEY,key=key.lower())
     LOGGER.info(f"query_executor to be called with \nQUERY : {Query}")
     result = query_executor(Query)
     if len(result) == 1:
