@@ -24,12 +24,13 @@ def wrapper(county, key):
     records = None
     fetched_count = 0
     saved_count = 0
-
+    records = []
     if query_id:
         LOGGER.info(f"{county}:{key} - Records already exist in DB")
         records = get_records(query_id, connection)
         fetched_count = len(records) if records else 0
         saved_count = fetched_count  # No new saves since it’s from DB
+        return records
     else:
         LOGGER.info(f"{county}:{key} - Fetching from API")
         records = search(key, county)
@@ -40,10 +41,11 @@ def wrapper(county, key):
             saved_count = len(cleaned_records)
             insert_records(query_id, cleaned_records, connection)
             LOGGER.info(f"{county}:{key} - Saved successfully ({saved_count} records)")
+            return cleaned_records
         else:
             LOGGER.info(f"{county}:{key} - No records to save from API")
     
-    return {"county": county, "key": key, "fetched": fetched_count, "saved": saved_count}
+    return records
 
 
 def long_search(counties: list, keys: list, max_workers: int = 5):
@@ -65,7 +67,7 @@ def long_search(counties: list, keys: list, max_workers: int = 5):
         for future in as_completed(future_to_combination):
             try:
                 result = future.result()
-                print(f'RESULT OF THREAD : {result}')
+                print(f'RESULT OF THREAD :\n County: {result["county"]}, Key: {result["key"]} , Fetched: {result["fetched"]}, Saved: {result["saved"]}')
                 total_fetched += result["fetched"]
                 total_saved += result["saved"]
             except Exception as e:
