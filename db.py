@@ -6,12 +6,41 @@ from datetime import datetime
 import requests
 import json
 import queries
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import time
+from mysql.connector import pooling
 # Set up logger
 LOGGER = setup_logging()(__name__)
 
 #Loading .env
 dotenv.load_dotenv()
+
+
+thread_local = threading.local()
+
+# MySQL connection pool configuration
+DB_CONFIG = {
+    "host": os.getenv("HOST"),
+    "user": os.getenv("USER"),
+    "password": os.getenv("PASSWORD"),
+    "database": os.getenv("DATABASE"),
+    "pool_name": "mypool",
+    "pool_size": 20
+}
+
+# Create a connection pool
+
+def get_connection_pool():
+    return pooling.MySQLConnectionPool(autocommit=True ,**DB_CONFIG)
+
+def create_connection(connection_pool):
+
+    if not hasattr(thread_local, "connection"):
+        thread_local.connection = connection_pool.get_connection()
+    return thread_local.connection
+
+
 
 def query_executor(query):
     
@@ -104,16 +133,9 @@ def fetch_from_overpass(query):
     
 
 # Data Checking 
-def check_query_exists(county, key):
+def check_query_exists(county, key, connection):
     LOGGER.info(f"check_query_exists called with county: {county}, key: {key}")
     LOGGER.info("INITIATING DATABASE CONNECTION")
-
-    connection = mysql.connector.connect(
-        host=os.getenv('HOST'),
-        user=os.getenv('USER'),
-        password=os.getenv('PASSWORD'),
-        database=os.getenv('DATABASE')
-    )
     cursor = connection.cursor()
     
     LOGGER.info("EXECUTING QUERY TO CHECK EXISTENCE")
@@ -126,21 +148,13 @@ def check_query_exists(county, key):
 
     LOGGER.info("Closing Connection")
     cursor.close()
-    connection.close()
-
     return result[0] if result else None
 
 
-def get_records(query_id):
+def get_records(query_id, connection):
     LOGGER.info(f"get_records called with query_id: {query_id}")
     LOGGER.info("INITIATING DATABASE CONNECTION")
 
-    connection = mysql.connector.connect(
-        host=os.getenv('HOST'),
-        user=os.getenv('USER'),
-        password=os.getenv('PASSWORD'),
-        database=os.getenv('DATABASE')
-    )
     cursor = connection.cursor()
     
     LOGGER.info(f"EXECUTING QUERY TO FETCH RECORDS with QUERY_ID : {query_id}")
@@ -152,8 +166,6 @@ def get_records(query_id):
 
     LOGGER.info("Closing Connection")
     cursor.close()
-    connection.close()
-
     return [
         {
             'Name': row[0],
@@ -169,16 +181,10 @@ def get_records(query_id):
         } for row in rows
     ]
 
-def insert_query(county, key):
+def insert_query(county, key, connection):
     LOGGER.info(f"insert_query called with county: {county}, key: {key}")
     LOGGER.info("INITIATING DATABASE CONNECTION")
 
-    connection = mysql.connector.connect(
-        host=os.getenv('HOST'),
-        user=os.getenv('USER'),
-        password=os.getenv('PASSWORD'),
-        database=os.getenv('DATABASE')
-    )
     cursor = connection.cursor()
 
     LOGGER.info("EXECUTING INSERT QUERY")
@@ -190,21 +196,13 @@ def insert_query(county, key):
 
     LOGGER.info("Closing Connection")
     cursor.close()
-    connection.close()
-
     return query_id
 
 
-def insert_records(query_id, records):
+def insert_records(query_id, records, connection):
     LOGGER.info(f"insert_records called with query_id: {query_id} and {len(records)} records")
     LOGGER.info("INITIATING DATABASE CONNECTION")
 
-    connection = mysql.connector.connect(
-        host=os.getenv('HOST'),
-        user=os.getenv('USER'),
-        password=os.getenv('PASSWORD'),
-        database=os.getenv('DATABASE')
-    )
     cursor = connection.cursor()
 
     LOGGER.info("EXECUTING INSERTS FOR RECORDS")
@@ -229,5 +227,4 @@ def insert_records(query_id, records):
 
     LOGGER.info("Closing Connection")
     cursor.close()
-    connection.close()
 

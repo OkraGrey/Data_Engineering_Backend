@@ -5,7 +5,7 @@ from mysql.connector import pooling
 from endpoints import search
 from logging_config import setup_logging
 from utils import records_cleaner
-from db import check_query_exists, get_records, insert_query, insert_records
+from db import check_query_exists, get_records, insert_query, insert_records, create_connection, get_connection_pool
 from dotenv import load_dotenv
 import os
 #Setting Up my LOGGER with Logging Level Info
@@ -13,58 +13,37 @@ import os
 LOGGER = setup_logging()(__name__)
 load_dotenv()
 # Thread-local storage for database connections
-thread_local = threading.local()
 
-# MySQL connection pool configuration
-DB_CONFIG = {
-    "host": os.getenv("HOST"),
-    "user": os.getenv("USER"),
-    "password": os.getenv("PASSWORD"),
-    "database": os.getenv("DATABASE"),
-    "pool_name": "mypool",
-    "pool_size": 10 
-}
-
-# Create a connection pool
-connection_pool = pooling.MySQLConnectionPool(**DB_CONFIG)
-
-def create_connection():
-    """
-    Get or create a database connection from the pool for the current thread.
-    
-    Returns:
-        MySQLConnection: A thread-local database connection
-    """
-    if not hasattr(thread_local, "connection"):
-        thread_local.connection = connection_pool.get_connection()
-    return thread_local.connection
+CONNECTION_POOL = get_connection_pool()
 
 def wrapper(county, key):
-    # COUNTY = "Chilton"
-    # KEY    = "shop"
-    LOGGER.info("Calling Search Endpoint")
-    
-    query_id = check_query_exists(county, key)
+    """Process a single county-key combination and return fetch/save counts."""
+    LOGGER.info(f"Starting {county}:{key}")
+    connection = create_connection(CONNECTION_POOL)
+    query_id = check_query_exists(county, key, connection)
     records = None
+    fetched_count = 0
+    saved_count = 0
 
     if query_id:
-        LOGGER.info(f"Query for {county} and {key} found in database")
-        # Incase we do have data in DB, we will fetch it from DB
-        records = get_records(query_id)
-        LOGGER.info(f"Retrieved {len(records)} records from database")
-    else:# In case ww don't find one, we will fetch from tradional way
-        LOGGER.info(f"No query found for {county} and {key}, performing search")
+        LOGGER.info(f"{county}:{key} - Records already exist in DB")
+        records = get_records(query_id, connection)
+        fetched_count = len(records) if records else 0
+        saved_count = fetched_count  # No new saves since it’s from DB
+    else:
+        LOGGER.info(f"{county}:{key} - Fetching from API")
         records = search(key, county)
-
+        fetched_count = len(records) if records else 0
         if records:
-            query_id = insert_query(county, key)
+            query_id = insert_query(county, key, connection)
             cleaned_records = records_cleaner(records)
-            LOGGER.info(f"After cleaning, {len(cleaned_records)} records remain")
-            insert_records(query_id, cleaned_records)
-            LOGGER.info(f"Inserted {len(cleaned_records)} records into database")
+            saved_count = len(cleaned_records)
+            insert_records(query_id, cleaned_records, connection)
+            LOGGER.info(f"{county}:{key} - Saved successfully ({saved_count} records)")
         else:
-            LOGGER.info("Search returned no records, but query is recorded")
-    return records
+            LOGGER.info(f"{county}:{key} - No records to save from API")
+    
+    return {"county": county, "key": key, "fetched": fetched_count, "saved": saved_count}
 
 
 def long_search(counties: list, keys: list, max_workers: int = 5):
